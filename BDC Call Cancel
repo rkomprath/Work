@@ -1,0 +1,117 @@
+// ==UserScript==
+// @name         BDC Call Cancel
+// @version      1
+// @author       Roy
+// @match        https://autoloop.us/DMS/App/BDC/ActiveCampaign*
+// @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
+// ==/UserScript==
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+var a = [];
+var ab = [];
+var url = window.location.href;
+var d = $('#statusReport > h6:nth-child(2)').html();
+console.log(`sessionStorage.x is equal to ${sessionStorage.x}`);
+
+// Click BDC button to start process - calls getURL()
+$('#MainContent > div.container_24.clearfix').append(
+  "<button class='float_right' id='BDC' type=button>BDC Disabling</button>"
+);
+$('#BDC').click(function () {
+  console.log(
+    'Button clicked - getURL launched. Setting sessionStorage.x to 1'
+  );
+  x = 1;
+  getURL();
+  sessionStorage.x = x;
+  console.log(sessionStorage.x);
+  window.location.reload();
+});
+
+// Initial step to set var x to 0
+if (sessionStorage.x == '') {
+  console.log('SessionStorage.x is undefined - setting var x to = 0');
+  var x = 0;
+}
+
+// Second step to start the openURL() process and to grab the sessionStorage.links
+if (sessionStorage.x > 0 && url.indexOf('ActiveCampaignGrouping') > -1) {
+  console.log(
+    `sessionStorage is greater than 0. sessionStorage.x is equal to ${sessionStorage.x}`
+  );
+  var links1 = sessionStorage.links;
+  var links2 = JSON.parse(links1);
+  console.log(links2);
+  if (url.indexOf('ActiveCampaignGrouping') > -1) {
+    console.log('url index check launch and openURL');
+    openURL();
+  }
+}
+
+if (
+  url.indexOf('notificationrunid') > -1 &&
+  window.location != sessionStorage.links[0]
+) {
+  links1 = sessionStorage.links;
+  links2 = JSON.parse(links1);
+  openURL();
+}
+
+// openURL() - first step in process and gets called each time a call is deactivated
+function openURL() {
+  if (links2.length > 0 && sessionStorage.x > 0) {
+    window.location = links2[0];
+  } else if (links2.length == 1 && sessionStorage.x > 0) {
+    window.location = links2[0];
+    sessionStorage.x = 0;
+  }
+  console.log(links2);
+}
+
+// Grabs the BDC call URL's - called from the BDC button click
+function getURL() {
+  console.log(
+    'getURL called - grabbing the BDC links and pushing them to array ab'
+  );
+  $('#gridCampaigns tr')
+    .children()
+    .children()
+    .each(function () {
+      var z = $(this).text();
+      if (
+        z.indexOf('Day') > -1 ||
+        z.indexOf('Missed') > -1 ||
+        z.indexOf('Customer Recovery') > -1 ||
+        z.indexOf('day(s)') > -1 ||
+        z.indexOf('Maintenance') > -1
+      ) {
+        var b = $(this).text();
+        var c = $(this).attr('href');
+        console.log(b);
+        console.log(c);
+        ab.push(c);
+      }
+    });
+  sessionStorage.links = JSON.stringify(ab);
+  console.log(sessionStorage.links);
+}
+
+// Deactivate the BDC call - go to next url by calling openURL(). This is a loop.
+if (d == 'Status: Active') {
+  console.log('Status: Active - running deactivate');
+  setTimeout(function () {
+    $('#btnDeactivate')[0].click();
+  }, 1000);
+} else if (d == 'Status: Inactive' && links2.length > 0) {
+  console.log('Status: Inactive - running openURL()');
+  links2.shift();
+  sessionStorage.links = JSON.stringify(links2);
+  openURL();
+} else if (d == 'Status: Inactive' && links2.length == 0) {
+  console.log('Status: Inactive - running openURL()');
+  sessionStorage.x = 0;
+  alert('Done');
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
